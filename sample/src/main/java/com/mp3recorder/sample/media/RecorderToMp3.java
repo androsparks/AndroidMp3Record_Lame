@@ -36,7 +36,7 @@ public class RecorderToMp3 {
 
     private RecorderToMp3() {
         mp3Recorder = new MP3Recorder.Builder()
-                        .withSampleRate(48000)
+                        .withSampleRate(8000) // 48000
                         .Quality(7)
                         .withBitRate(32)
                         .withPcmFormat(PCMFormat.PCM_16BIT)
@@ -69,6 +69,13 @@ public class RecorderToMp3 {
      */
     public void stopRecord() {
         mp3Recorder.stop();
+    }
+
+    /**
+     * 取消录制
+     */
+    public void cancelRecord() {
+        mp3Recorder.cancel();
     }
 
     /**
