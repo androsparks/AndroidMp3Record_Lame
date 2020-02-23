@@ -120,6 +120,11 @@ public class MainActivity extends Activity implements LameUtil.LameWriteFinishCa
     }
 
     @Override
+    public void lameCancelCallBack(String fileName) {
+
+    }
+
+    @Override
     public void decibelValueCallback(double decibelValueCallback) {
         Log.d("activity", "decibel value:" + decibelValueCallback);
     }

@@ -55,7 +55,7 @@ public class MP3Recorder {
     private Timer timer = new Timer();
     private boolean isPausing;
     // 取消
-    private boolean isCancel;
+    public static boolean isCancel;
 
     /**
      * 录音开始时间值
@@ -160,6 +160,7 @@ public class MP3Recorder {
         }
         mIsRecording = true; // 提早，防止init或startRecording被多次调用
         isPausing = false;
+        isCancel = false;
         initAudioRecorder();
         mAudioRecord.startRecording();
         new Thread() {
@@ -174,7 +175,7 @@ public class MP3Recorder {
                         continue;
                     }
                     if(isCancel) {
-                        return;
+                        break;
                     }
                     LogUtil.LOG_D("recorder", "readSize:" + readSize);
                     if (readSize > 0) {

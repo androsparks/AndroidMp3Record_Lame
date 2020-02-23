@@ -2,6 +2,8 @@ package com.guagua.mp3recorder.util;
 
 import android.util.Log;
 
+import com.guagua.mp3recorder.MP3Recorder;
+
 public class LameUtil {
 	private static LameWriteFinishCall mLameWriteCallBack;
 	private static boolean sDebug=true;
@@ -101,13 +103,20 @@ public class LameUtil {
 	public static void lameWriteCloseCallback(String fileName){
 		Log.d("recorder",fileName+"");
 		if (null!=mLameWriteCallBack){
-			mLameWriteCallBack.lameWriteCallBack(fileName);
+			if(MP3Recorder.isCancel) {
+				mLameWriteCallBack.lameCancelCallBack(fileName);
+			}
+			else {
+				mLameWriteCallBack.lameWriteCallBack(fileName);
+			}
 		}
+
 	}
 
 	public interface LameWriteFinishCall{
 		void lameWriteCallBack(String fileName);
 		void lameWriteCallBack(boolean status);
+		void lameCancelCallBack(String fileName);
 	}
 
 	public static void setLameCallback(LameWriteFinishCall lameWriteFinishCall){
