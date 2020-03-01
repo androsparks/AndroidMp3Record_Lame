@@ -217,6 +217,11 @@ public class RecordDialog extends Dialog implements IRecordButtonTouchStateListe
     }
 
     @Override
+    public void lameCancelCallBack(String fileName) {
+
+    }
+
+    @Override
     public void timeCallback(final long l) {
         recordTotalTime = (l / 1000 - 1);
         mHandler.post(new Runnable() {
