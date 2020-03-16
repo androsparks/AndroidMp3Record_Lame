@@ -11,6 +11,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MP3Recorder {
     //=======================AudioRecord Default Settings=======================
@@ -54,6 +56,7 @@ public class MP3Recorder {
     private TimerTask task;
     private Timer timer = new Timer();
     private boolean isPausing;
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
     // 取消
     public static boolean isCancel;
 
@@ -163,7 +166,8 @@ public class MP3Recorder {
         isCancel = false;
         initAudioRecorder();
         mAudioRecord.startRecording();
-        new Thread() {
+
+        executorService.execute(new Runnable() {
             @Override
             public void run() {
                 //设置线程权限
@@ -184,14 +188,15 @@ public class MP3Recorder {
                     }
                 }
                 // release and finalize audioRecord
-                mAudioRecord.stop();
-                mAudioRecord.release();
-                mAudioRecord = null;
+                if (null != mAudioRecord) {
+                    mAudioRecord.stop();
+                    mAudioRecord.release();
+                    mAudioRecord = null;
+                }
                 // stop the encoding thread and try to wait
                 // until the thread finishes its job
                 mEncodeThread.sendStopMessage();
             }
-
             /**
              * 此计算方法来自samsung开发范例
              *
@@ -213,7 +218,7 @@ public class MP3Recorder {
                     }
                 }
             }
-        }.start();
+        });
     }
 
     public void cancel() {
