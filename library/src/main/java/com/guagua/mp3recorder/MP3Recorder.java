@@ -3,6 +3,7 @@ package com.guagua.mp3recorder;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.util.Log;
 
 import com.guagua.mp3recorder.util.LameUtil;
 import com.guagua.mp3recorder.util.LogUtil;
@@ -13,8 +14,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class MP3Recorder {
+    private static final String TAG = "MP3Recorder";
     //=======================AudioRecord Default Settings=======================
     private int DEFAULT_AUDIO_SOURCE = MediaRecorder.AudioSource.MIC;
     /**
@@ -51,7 +54,7 @@ public class MP3Recorder {
     private int mBufferSize;
     private short[] mPCMBuffer;
     private DataEncodeThread mEncodeThread;
-    private boolean mIsRecording = false;
+    private volatile Boolean mIsRecording = false;
     private File mRecordFile;
     private TimerTask task;
     private Timer timer = new Timer();
@@ -59,6 +62,8 @@ public class MP3Recorder {
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
     // 取消
     public static boolean isCancel;
+
+    Future recordFuture;
 
     /**
      * 录音开始时间值
@@ -158,8 +163,18 @@ public class MP3Recorder {
      * @throws IOException initAudioRecorder throws
      */
     public void start() throws IOException {
+        Log.d(TAG, "start(), mIsRecording():" + mIsRecording);
         if (mIsRecording) {
+            Log.d(TAG, "start(), Is Recording ...");
             return;
+        }
+        if (null != recordFuture && !recordFuture.isDone()) {
+            Log.d(TAG, "start(), record isn't end! please wait...");
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
         mIsRecording = true; // 提早，防止init或startRecording被多次调用
         isPausing = false;
@@ -167,7 +182,7 @@ public class MP3Recorder {
         initAudioRecorder();
         mAudioRecord.startRecording();
 
-        executorService.execute(new Runnable() {
+        recordFuture = executorService.submit(new Runnable() {
             @Override
             public void run() {
                 //设置线程权限
@@ -186,7 +201,7 @@ public class MP3Recorder {
                         mEncodeThread.addTask(mPCMBuffer, readSize);
                         calculateRealVolume(mPCMBuffer, readSize);
                     }
-                }
+               }
                 // release and finalize audioRecord
                 if (null != mAudioRecord) {
                     mAudioRecord.stop();
@@ -196,6 +211,7 @@ public class MP3Recorder {
                 // stop the encoding thread and try to wait
                 // until the thread finishes its job
                 mEncodeThread.sendStopMessage();
+                MP3Recorder.this.notifyAll();
             }
             /**
              * 此计算方法来自samsung开发范例
@@ -306,8 +322,8 @@ public class MP3Recorder {
         LameUtil.init(DEFAULT_SAMPLING_RATE, DEFAULT_LAME_IN_CHANNEL, DEFAULT_SAMPLING_RATE, DEFAULT_LAME_MP3_BIT_RATE, DEFAULT_LAME_MP3_QUALITY);
         // Create and run thread used to encode data
         // The thread will
-        final long[] i = {0};
         task = new TimerTask() {
+            final long[] i = {0};
             @Override
             public void run() {
                 if (null != mRecordTimeListener) {
